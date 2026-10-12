@@ -12,6 +12,18 @@ node tools/serve.js
 
 Luego abre http://localhost:5173. (También funciona con doble clic en `index.html`.)
 
+## Desplegar en Vercel
+
+Es un sitio estático: no hay que compilar nada. `vercel.json` ya está configurado.
+
+1. Entra a https://vercel.com/new e importa el repo de GitHub.
+2. Deja todo como viene (Vercel lee `vercel.json`) y pulsa **Deploy**.
+3. Cada `git push` a `main` vuelve a desplegar automáticamente.
+
+En cada despliegue se ejecuta `npm test`: si un test falla, **el despliegue se cancela** y la versión anterior sigue en línea.
+
+O desde la terminal: `npm i -g vercel` y luego `vercel --prod`.
+
 ## Qué hay
 
 | Sección | Qué hace |
