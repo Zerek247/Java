@@ -1,0 +1,40 @@
+# JavaQuest ☕
+
+App web para aprender Java desde cero hasta nivel certificación (OCP), de forma interactiva.
+
+Incluye un **mini compilador + intérprete de Java escrito en JavaScript** (`js/engine.js`) que aplica las reglas del JLS: promoción numérica, conversiones de asignación, constantes de compilación, `final`, `var`, overflow de 32/64 bits, cortocircuito, String pool… y explica cada paso.
+
+## Cómo abrirla
+
+```bash
+node tools/serve.js
+```
+
+Luego abre http://localhost:5173. (También funciona con doble clic en `index.html`.)
+
+## Qué hay
+
+| Sección | Qué hace |
+|---|---|
+| 📘 Teoría | 13 secciones con ejemplos ejecutables, reglas, trampas de examen y widgets |
+| 🧪 Laboratorio | Editor de Java: salida, paso a paso con memoria animada, traza, árbol de tipos y bits |
+| 🎮 Juegos | Promotion Arena, ¿Compila?, Predice la salida, La Escalera, Bit Lab, Rayos X, Flashcards |
+| 🎯 Examen | Simulador estilo OCP con explicación de cada respuesta |
+
+## Tests
+
+```bash
+node tests/engine.test.js     # semántica de Java del motor
+node tests/content.test.js    # las respuestas de los juegos coinciden con el motor
+```
+
+## Estructura
+
+- `js/engine.js` — léxico, parser, chequeo de tipos y ejecución con traza
+- `js/ui.js` — editor, consola, depurador paso a paso, árbol de tipos
+- `js/content-ops.js` — teoría y bancos de preguntas del tema 1
+- `js/widgets.js` — widgets interactivos de la teoría
+- `js/games.js` — los juegos
+- `js/app.js` — menú, rutas y progreso
+
+Para añadir un tema nuevo: crea `js/content-<tema>.js` con la misma forma que `content-ops.js` y actívalo en `MODULES` dentro de `app.js`.
