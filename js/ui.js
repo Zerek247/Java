@@ -69,7 +69,7 @@
     const ta = h('textarea', { spellcheck: 'false', wrap: 'off', autocapitalize: 'off', autocomplete: 'off', 'aria-label': 'Editor de código Java' });
     const pre = h('pre', { 'aria-hidden': 'true' });
     const gutter = h('div', { class: 'gutter' });
-    const inner = h('div', { class: 'editor-inner' }, gutter, h('div', { class: 'ed-area' }, pre, ta));
+    const inner = h('div', { class: 'editor-inner', style: opts.minHeight ? { minHeight: opts.minHeight + 'px' } : null }, gutter, h('div', { class: 'ed-area' }, pre, ta));
     const el = h('div', { class: 'editor' }, opts.bar || null, inner);
     let active = 0, err = 0;
     ta.value = code;
@@ -82,7 +82,7 @@
       }).join('\n') + '\n';
       gutter.innerHTML = lines.map((_, i) => `<div class="${i + 1 === err ? 'err' : i + 1 === active ? 'active' : ''}">${i + 1}</div>`).join('');
       ta.style.height = 'auto'; ta.style.width = 'auto';
-      ta.style.height = Math.max(ta.scrollHeight, 300) + 'px';
+      ta.style.height = Math.max(ta.scrollHeight, opts.minHeight || 300) + 'px';
       ta.style.width = Math.max(ta.scrollWidth, inner.clientWidth - 46) + 'px';
     }
     ta.addEventListener('input', () => { err = 0; active = 0; render(); opts.onChange && opts.onChange(ta.value); });

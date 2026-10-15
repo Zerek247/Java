@@ -25,6 +25,43 @@ for (const q of T.EXAMEN) {
     okc ? pass++ : bad('EXAMEN CE', JSON.stringify(q.code), ans, '→', r.error.msg, 'línea', r.error.line);
   } else bad('EXAMEN runtime', q.code);
 }
+// Test por sección: cada sección tiene banco suficiente y las respuestas con código coinciden con el motor
+const QM = require('../js/quiz-ops.js');
+const Q = QM.QUIZ;
+// Retos de código: la solución cumple todos los requisitos y el código inicial NO
+for (const s of T.SECTIONS) {
+  const list = QM.CHALLENGES[s.id];
+  if (!list || list.length < 2) { bad('RETO', s.id, 'menos de 2 retos'); continue; }
+  for (const ch of list) {
+    const sol = QM.check(ch, ch.solution);
+    sol.ok ? pass++ : bad('RETO solución', s.id, JSON.stringify(ch.solution), sol.reqs.filter(r => !r.ok).map(r => r.text), sol.res.out || (sol.res.error && sol.res.error.msg));
+    QM.check(ch, ch.starter).ok ? bad('RETO starter ya resuelto', s.id, ch.starter) : pass++;
+    ch.hint && ch.why ? pass++ : bad('RETO sin pista/explicación', s.id, ch.task);
+  }
+}
+// Las trampas típicas no deben pasar los retos
+const cheat = (sec, i, code) => { QM.check(QM.CHALLENGES[sec][i], code).ok ? bad('RETO tramposo aceptado', sec, code) : pass++; };
+cheat('aritmeticos', 2, 'System.out.println(3000000000L);');
+cheat('aritmeticos', 0, 'System.out.println("3 2");');
+cheat('casting', 0, 'System.out.println(-56);');
+cheat('precedencia', 0, 'int r = 19;\nSystem.out.println(r);');
+cheat('bits', 0, 'int x = 5;\nint r = 40;\nSystem.out.println(r);');
+for (const s of T.SECTIONS) {
+  const bank = Q[s.id];
+  if (!bank || bank.length < 6) { bad('QUIZ', s.id, 'banco insuficiente', bank && bank.length); continue; }
+  for (const q of bank) {
+    if (!(q.a >= 0 && q.a < q.opts.length) || !q.why) { bad('QUIZ formato', s.id, q.code || q.q); continue; }
+    if (!q.code) { pass++; continue; }
+    const r = J.run(q.code);
+    const ans = q.opts[q.a];
+    let ok;
+    if (r.phase === 'compile') ok = /No compila|Compilation fails/.test(ans);
+    else if (r.phase === 'runtime') ok = /ArithmeticException/.test(ans);
+    else if (r.out.trim()) ok = r.out.trimEnd() === ans;
+    else ok = /^(Compila|Sí)/.test(ans);
+    ok ? pass++ : bad('QUIZ', s.id, JSON.stringify(q.code), 'respuesta', ans, '→ motor:', r.phase || 'ok', r.out.trim() || (r.error && r.error.msg));
+  }
+}
 for (const q of T.BITRETOS) {
   const r = J.run(`System.out.println(${q.e});`);
   r.out.trimEnd() === q.a ? pass++ : bad('BIT', q.e, q.a, '→', r.out, r.error && r.error.msg);

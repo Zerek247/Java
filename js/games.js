@@ -412,56 +412,177 @@
     show();
   }
 
-  // ═════════════ 8. Simulador de examen ═════════════
-  function examen(root, topic, api) {
-    const qs = shuffle(topic.EXAMEN);
+  // ═════════════ 8. Cuestionarios: test por sección y simulador de examen ═════════════
+  // Baraja las opciones dejando al final las de "no compila / excepción / depende"
+  function shuffleOpts(q) {
+    const idx = q.opts.map((_, i) => i);
+    const fixed = idx.filter(i => /compil|Exception|Depende|No tiene/i.test(q.opts[i]));
+    const order = [...shuffle(idx.filter(i => !fixed.includes(i))), ...fixed];
+    return { ...q, opts: order.map(i => q.opts[i]), a: order.indexOf(q.a) };
+  }
+  function secTitle(topic, id) {
+    if (id === 'integrador') return '🧩 Integradoras (mezclan todo)';
+    const i = topic.SECTIONS.findIndex(s => s.id === id);
+    return i < 0 ? id : `${i + 1}. ${topic.SECTIONS[i].title}`;
+  }
+  /* opts: { questions, head (elemento opcional), pass (0..1), inline, onDone(right, total) → ¿récord?, again(), actions: [[label, fn]] } */
+  function runQuiz(root, topic, opts) {
+    const qs = opts.questions.map(q => (q.type === 'code' ? q : shuffleOpts(q)));
+    const passPct = Math.round((opts.pass || 0.68) * 100);
     let i = 0, right = 0;
     const answers = [];
     const sRight = stat('correctas', 0), sRound = stat('pregunta', '');
     const body = h('div');
-    root.replaceChildren(
-      api.inTab ? h('div', { class: 'game-top' }, h('div', null, h('div', { class: 'h2', style: { margin: 0 } }, '🎯 Simulador de examen'), h('div', { class: 'muted', style: { fontSize: '14px' } }, `${qs.length} preguntas estilo OCP. Aprobado: 68%.`))) : header(api, '🎯 Simulador de examen', `${qs.length} preguntas estilo OCP. Aprobado: 68%.`),
-      h('div', { class: 'hud' }, sRight.el, sRound.el), body);
+    root.replaceChildren(opts.head || null, h('div', { class: 'hud' }, sRight.el, sRound.el), body);
+    function finish() {
+      const pct = Math.round(right / qs.length * 100);
+      const passed = pct >= passPct;
+      const best = opts.onDone ? opts.onDone(right, qs.length) : false;
+      if (passed) confetti(opts.inline ? 40 : 70);
+      const wrong = answers.filter(a => !a.ok);
+      const bySec = new Map();
+      answers.forEach(a => { if (!a.q.sec) return; const o = bySec.get(a.q.sec) || { ok: 0, n: 0 }; o.n++; if (a.ok) o.ok++; bySec.set(a.q.sec, o); });
+      const breakdown = bySec.size > 1 ? h('div', { style: { textAlign: 'left', marginTop: '24px' } }, h('div', { class: 'h3' }, '📊 Resultado por sección'),
+        h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl' }, h('tbody', null, [...bySec].sort((x, y) => x[1].ok / x[1].n - y[1].ok / y[1].n).map(([sec, o]) => h('tr', null,
+          h('td', null, secTitle(topic, sec)),
+          h('td', { class: 'mono', style: { color: o.ok === o.n ? 'var(--green)' : 'var(--red)', whiteSpace: 'nowrap' } }, `${o.ok}/${o.n} ${o.ok === o.n ? '✓' : '✗'}`),
+          h('td', null, o.ok < o.n && sec !== 'integrador' ? h('a', { href: `#/ops/teoria/${sec}` }, 'Repasar →') : null))))))) : null;
+      root.replaceChildren(h('div', { class: 'card result-screen fade-in' },
+        h('div', { class: 'eyebrow' }, opts.inline ? (passed ? '✅ Test superado' : `📚 Aún no (necesitas ${passPct}%) — repasa y reintenta`) : (passed ? '✅ APROBADO' : `❌ NO APROBADO (${passPct}% requerido)`)),
+        h('div', { class: 'score grad-text', style: opts.inline ? { fontSize: '48px' } : null }, `${right}/${qs.length}`),
+        h('p', { class: 'muted', style: { margin: '0 0 6px' } }, `${pct}%` + (opts.inline && passed ? ' · sección marcada como entendida ✓' : '')),
+        best ? h('p', { style: { color: 'var(--lime)', fontWeight: 600 } }, '⭐ ¡Nuevo récord personal!') : null,
+        h('div', { class: 'row', style: { justifyContent: 'center', marginTop: '14px' } },
+          h('button', { class: 'btn primary', onclick: opts.again }, opts.inline ? '↻ Otro test (preguntas nuevas)' : '↻ Nuevo examen'),
+          (opts.actions || []).map(([label, fn]) => h('button', { class: 'btn', onclick: fn }, label))),
+        breakdown,
+        wrong.length ? h('div', { style: { textAlign: 'left', marginTop: '24px' } }, h('div', { class: 'h3' }, '🔁 Repasa tus fallos'),
+          wrong.map(a => h('div', { class: 'trap blk' },
+            bySec.size > 1 ? h('div', { class: 'mem-title' }, secTitle(topic, a.q.sec)) : null,
+            a.q.type === 'code' ? [h('p', { html: '💻 <b>Reto:</b> ' + md(a.q.task) }), h('div', { class: 'mem-title', style: { marginTop: '8px' } }, 'Una solución'), codeEl(a.q.solution), h('p', { style: { marginTop: '10px' }, html: md(a.q.why) })]
+              : [a.q.q ? h('p', { html: md(a.q.q) }) : null, a.q.code ? codeEl(a.q.code) : null,
+            h('p', { style: { marginTop: '10px' }, html: `<b>Tu respuesta:</b> ${md(a.q.opts[a.pick])}<br><b>Correcta:</b> ${md(a.q.opts[a.q.a])}<br>${md(a.q.why)}` })]))) : null));
+    }
     function next() {
-      if (i >= qs.length) {
-        const pct = Math.round(right / qs.length * 100);
-        const best = saveBest('ops.exam', pct);
-        const wrong = answers.filter(a => !a.ok);
-        resultScreen(root, { title: pct >= 68 ? '✅ APROBADO' : '❌ NO APROBADO (68% requerido)', score: right, of: qs.length, best, msg: `${pct}%`, again: () => examen(root, topic, api), api });
-        if (wrong.length) root.firstChild.append(h('div', { style: { textAlign: 'left', marginTop: '24px' } }, h('div', { class: 'h3' }, 'Repasa tus fallos'), wrong.map(a => h('div', { class: 'trap blk' }, a.q.code ? codeEl(a.q.code) : h('p', null, a.q.q), h('p', { style: { marginTop: '10px' }, html: `<b>Correcta:</b> ${md(a.q.opts[a.q.a])}<br>${md(a.q.why)}` })))));
-        return;
-      }
+      if (i >= qs.length) return finish();
       const q = qs[i];
       sRound.set(`${i + 1}/${qs.length}`);
-      const opts = q.opts.map((o, j) => h('button', { class: 'opt', onclick: () => pick(j) }, h('span', { class: 'letter' }, 'ABCDE'[j]), h('span', { html: md(o) })));
+      if (q.type === 'code') return challenge(q);
+      const btns = q.opts.map((o, j) => h('button', { class: 'opt', onclick: () => pick(j) }, h('span', { class: 'letter' }, 'ABCDE'[j]), h('span', { html: md(o) })));
       body.replaceChildren(h('div', { class: 'card fade-in' },
-        h('div', { class: 'mem-title' }, q.q || '¿Cuál es el resultado?'),
+        !opts.inline && q.sec ? h('div', { class: 'eyebrow', style: { marginBottom: '6px' } }, secTitle(topic, q.sec)) : null,
+        h('div', { class: 'quiz-q', html: md(q.q || '¿Cuál es el resultado?') }),
         q.code ? codeEl(q.code, true) : null,
-        h('div', { class: 'opt-list' }, opts)));
+        h('div', { class: 'opt-list' }, btns)));
       function pick(j) {
         const ok = j === q.a;
         if (ok) right++;
-        answers.push({ q, ok });
+        answers.push({ q, ok, pick: j });
         sRight.set(right);
-        opts.forEach((o, k) => { o.disabled = true; if (k === q.a) o.classList.add('right'); if (k === j) o.classList.add('picked'); if (k === j && !ok) o.classList.add('wrong'); });
+        btns.forEach((o, k) => { o.disabled = true; if (k === q.a) o.classList.add('right'); if (k === j) o.classList.add('picked'); if (k === j && !ok) o.classList.add('wrong'); });
         const res = q.code ? J.run(q.code) : null;
         const more = h('div', { style: { display: 'none', marginTop: '10px' } });
         const fb = h('div', { class: 'feedback ' + (ok ? 'good' : 'bad') },
           h('h4', null, ok ? '✓ Correcto' : `✗ Incorrecto — era la ${'ABCDE'[q.a]}`),
           h('p', { html: md(q.why) }),
-          res ? h('button', { class: 'btn sm ghost', onclick: () => { more.style.display = more.style.display ? '' : 'none'; if (!more.firstChild) more.append(res.phase === 'compile' ? h('div', null, consoleBox(res), whyBox(res)) : Stepper(res)); } }, '🔬 Ver la ejecución paso a paso') : null,
+          res ? h('button', { class: 'btn sm ghost', onclick: () => { more.style.display = more.style.display ? '' : 'none'; if (!more.firstChild) more.append(res.phase === 'compile' ? h('div', null, consoleBox(res), whyBox(res)) : Stepper(res)); } }, res.phase === 'compile' ? '🔬 Ver el error del compilador' : '🔬 Ver la ejecución paso a paso') : null,
           more,
           h('div', null, h('button', { class: 'btn primary', style: { marginTop: '14px' }, onclick: () => { i++; next(); } }, i + 1 >= qs.length ? 'Ver resultado →' : 'Siguiente →')));
         body.firstChild.append(fb);
       }
     }
+    // Reto de código: el alumno escribe, el motor compila/ejecuta y valida los requisitos
+    function challenge(q) {
+      let tries = 0, done = false;
+      const reqList = h('ul', { class: 'reqs' });
+      const drawReqs = st => reqList.replaceChildren(window.Challenge.requirements(q).map(r => {
+        const s = st && st.find(x => x.key === r.key);
+        return h('li', { class: s ? (s.ok ? 'ok' : 'no') : '' }, h('span', { class: 'req-ico' }, s ? (s.ok ? '✓' : '✗') : '○'), h('span', { html: md(r.text) }));
+      }));
+      drawReqs();
+      const result = h('div');
+      const ed = UI.Editor(q.starter, { minHeight: 150, onRun: () => run() });
+      const tryLbl = h('span', { class: 'muted', style: { fontSize: '13px' } });
+      const bRun = h('button', { class: 'btn primary', onclick: () => run() }, '▶ Comprobar');
+      const bHint = h('button', { class: 'btn ghost', onclick: () => { result.prepend(h('div', { class: 'tip blk fade-in' }, h('span', { class: 'blk-label' }, '💡 Pista'), h('p', { html: md(q.hint) }))); bHint.disabled = true; } }, '💡 Pista');
+      const bGive = h('button', { class: 'btn ghost', onclick: () => end(false, true) }, '👀 Ver solución');
+      const bReset = h('button', { class: 'btn ghost sm', onclick: () => { ed.value = q.starter; } }, '↺ Reiniciar código');
+      body.replaceChildren(h('div', { class: 'card fade-in' },
+        !opts.inline && q.sec ? h('div', { class: 'eyebrow', style: { marginBottom: '6px' } }, secTitle(topic, q.sec)) : null,
+        h('div', { class: 'row', style: { marginBottom: '8px' } }, h('span', { class: 'pill', style: { background: 'rgba(163,230,53,.15)', color: 'var(--lime)', borderColor: 'rgba(163,230,53,.4)' } }, '💻 Reto de código'), h('span', { class: 'muted', style: { fontSize: '13px' } }, 'Escribe Java de verdad: el compilador del laboratorio lo revisa')),
+        h('div', { class: 'quiz-q', html: md(q.task) }),
+        h('div', { class: 'challenge' },
+          h('div', null, ed.el, h('div', { class: 'row', style: { marginTop: '10px' } }, bRun, h('span', { class: 'muted', style: { fontSize: '12px' } }, h('kbd', null, 'Ctrl'), '+', h('kbd', null, 'Enter')), tryLbl, h('span', { class: 'spacer' }), bReset)),
+          h('div', null, h('div', { class: 'mem-title' }, '✅ Requisitos'), reqList, h('div', { class: 'row', style: { marginTop: '10px' } }, bHint, bGive))),
+        result));
+      function run() {
+        if (done) return;
+        tries++;
+        tryLbl.textContent = 'intento ' + tries;
+        const c = window.Challenge.check(q, ed.value);
+        drawReqs(c.reqs);
+        ed.setError(c.res.phase === 'compile' ? c.res.error.line : 0);
+        const hint = result.querySelector('.tip');
+        result.replaceChildren(hint, h('div', { class: 'mem-title', style: { marginTop: '14px' } }, '🖥 Tu programa'), consoleBox(c.res), whyBox(c.res));
+        if (c.ok) end(true);
+        else result.append(h('p', { class: 'muted', style: { marginTop: '8px', fontSize: '13px' } }, 'Te falta cumplir ' + c.reqs.filter(r => !r.ok).length + ' requisito(s). Corrige y vuelve a comprobar.'));
+      }
+      function end(ok, gaveUp) {
+        done = true;
+        if (ok) right++;
+        answers.push({ q, ok, tries });
+        sRight.set(right);
+        [bRun, bHint, bGive, bReset].forEach(b => (b.disabled = true));
+        ed.ta.readOnly = true;
+        const res = J.run(gaveUp ? q.solution : ed.value);
+        result.append(h('div', { class: 'feedback ' + (ok ? 'good' : 'bad') },
+          h('h4', null, ok ? '✓ ¡Reto superado' + (tries === 1 ? ' a la primera' : ' en ' + tries + ' intentos') + '!' : '👀 Una solución posible'),
+          gaveUp ? codeEl(q.solution) : null,
+          h('p', { style: { marginTop: '10px' }, html: md(q.why) }),
+          h('div', { class: 'mem-title', style: { marginTop: '12px' } }, '🔬 ' + (gaveUp ? 'Así se ejecuta la solución' : 'Así se ejecutó tu código') + ', paso a paso'),
+          Stepper(res),
+          h('div', null, h('button', { class: 'btn primary', style: { marginTop: '14px' }, onclick: () => { i++; next(); } }, i + 1 >= qs.length ? 'Ver resultado →' : 'Siguiente →'))));
+      }
+    }
     next();
   }
+
+  // Test de una sección: 5 preguntas al azar de su banco; con 4/5 se marca como entendida
+  function sectionQuiz(root, topic, secId, onPass) {
+    runQuiz(root, topic, {
+      questions: [...shuffle(topic.QUIZ[secId] || []).slice(0, (topic.CHALLENGES[secId] || []).length ? 4 : 5), ...shuffle(topic.CHALLENGES[secId] || []).slice(0, 1)], inline: true, pass: 0.8,
+      again: () => sectionQuiz(root, topic, secId, onPass),
+      onDone(right, total) {
+        const best = saveBest('ops.quiz.' + secId, right);
+        if (right / total >= 0.8) { Store.set('ops.sec.' + secId, true); onPass && onPass(); }
+        return best;
+      }
+    });
+  }
+
+  // Simulador final: 1 pregunta al azar de cada sección + 7 integradoras
+  function examen(root, topic, api) {
+    const qs = shuffle([
+      ...topic.SECTIONS.filter(s => topic.QUIZ[s.id]).map(s => ({ ...pickOne(topic.QUIZ[s.id]), sec: s.id })),
+      ...shuffle(topic.EXAMEN).slice(0, 5).map(q => ({ ...q, sec: 'integrador' })),
+      ...shuffle(Object.values(topic.CHALLENGES).flat()).slice(0, 2)
+    ]);
+    const sub = `${qs.length} preguntas: una de cada sección, 5 integradoras y 2 retos de código. Aprobado: 68%.`;
+    runQuiz(root, topic, {
+      questions: qs, pass: 0.68,
+      head: api.inTab ? h('div', { class: 'game-top' }, h('div', null, h('div', { class: 'h2', style: { margin: 0 } }, '🎯 Simulador de examen'), h('div', { class: 'muted', style: { fontSize: '14px' } }, sub))) : header(api, '🎯 Simulador de examen', sub),
+      again: () => examen(root, topic, api),
+      actions: [['Ir a los juegos', () => api.back()]],
+      onDone: (right, total) => saveBest('ops.exam', Math.round(right / total * 100))
+    });
+  }
+  window.Quiz = { run: runQuiz, section: sectionQuiz };
 
   // Enter = botón "Siguiente" en cualquier juego
   document.addEventListener('keydown', e => {
     if (e.key !== 'Enter' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    const fb = document.querySelector('.feedback .btn.primary:last-of-type');
+    const all = document.querySelectorAll('.feedback .btn.primary');
+    const fb = all[all.length - 1];
     if (fb && document.activeElement !== fb) { e.preventDefault(); fb.click(); }
   });
 
@@ -473,6 +594,6 @@
     { id: 'bitlab', ico: '🧬', name: 'Bit Lab', tag: 'Casting interno', desc: 'Visualiza los bits: qué se conserva y qué se pierde en cada cast.', fn: bitlab, best: () => Store.get('ops.game.bitlab', null), unit: ' retos' },
     { id: 'rayosx', ico: '🩻', name: 'Rayos X', tag: '++ / -- / &&', desc: 'Cámara lenta de la JVM con memoria animada para los casos tramposos.', fn: rayosx, best: () => Store.get('ops.played.rayosx', null) ? '✓' : null, unit: '' },
     { id: 'flash', ico: '🃏', name: 'Flashcards', tag: 'Memoria', desc: 'Las reglas clave en tarjetas que se voltean. Repite hasta dominarlas.', fn: flash, best: () => Store.get('ops.game.flash', null), unit: '%' },
-    { id: 'examen', ico: '🎯', name: 'Simulador de examen', tag: 'OCP', desc: 'Preguntas estilo certificación con explicación y ejecución paso a paso.', fn: examen, best: () => Store.get('ops.exam', null), unit: '%' }
+    { id: 'examen', ico: '🎯', name: 'Simulador de examen', tag: 'OCP', desc: 'Todo el tema mezclado: una pregunta por sección + integradoras, y te dice dónde fallaste.', fn: examen, best: () => Store.get('ops.exam', null), unit: '%' }
   ];
 })();

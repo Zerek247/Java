@@ -28,10 +28,10 @@ O desde la terminal: `npm i -g vercel` y luego `vercel --prod`.
 
 | Sección | Qué hace |
 |---|---|
-| 📘 Teoría | 13 secciones con ejemplos ejecutables, reglas, trampas de examen y widgets |
+| 📘 Teoría | 13 secciones con ejemplos ejecutables, reglas, trampas de examen, widgets y un **📝 Test** por sección (4 preguntas al azar + 1 **reto de código** que escribes tú y el motor valida; 4/5 la marca como entendida) |
 | 🧪 Laboratorio | Editor de Java: salida, paso a paso con memoria animada, traza, árbol de tipos y bits |
 | 🎮 Juegos | Promotion Arena, ¿Compila?, Predice la salida, La Escalera, Bit Lab, Rayos X, Flashcards |
-| 🎯 Examen | Simulador estilo OCP con explicación de cada respuesta |
+| 🎯 Examen | Simulacro final: 1 pregunta de cada sección + 5 integradoras + 2 retos de código, con desglose de dónde fallaste |
 
 ## Tests
 
@@ -44,7 +44,8 @@ node tests/content.test.js    # las respuestas de los juegos coinciden con el mo
 
 - `js/engine.js` — léxico, parser, chequeo de tipos y ejecución con traza
 - `js/ui.js` — editor, consola, depurador paso a paso, árbol de tipos
-- `js/content-ops.js` — teoría y bancos de preguntas del tema 1
+- `js/content-ops.js` — teoría y bancos de preguntas de los juegos del tema 1
+- `js/quiz-ops.js` — preguntas y retos de código por sección, y el validador de retos
 - `js/widgets.js` — widgets interactivos de la teoría
 - `js/games.js` — los juegos
 - `js/app.js` — menú, rutas y progreso

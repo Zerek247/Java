@@ -413,3 +413,21 @@ kbd { font-size: 11px; padding: 1px 6px; border-radius: 5px; border: 1px solid v
 .toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--panel2); border: 1px solid var(--violet); padding: 12px 20px; border-radius: 14px; z-index: 100; box-shadow: 0 16px 40px rgba(0, 0, 0, .5); animation: pop .25s; font-weight: 600; }
 .confetti { position: fixed; pointer-events: none; z-index: 99; width: 9px; height: 14px; border-radius: 3px; top: -20px; animation: fall linear forwards; }
 @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+/* Test por sección */
+.section-quiz { margin-top: 18px; padding: 18px; border-radius: 16px; border: 1px solid rgba(139, 92, 246, .5); background: linear-gradient(160deg, rgba(139, 92, 246, .1), rgba(34, 211, 238, .04)); scroll-margin-top: 90px; animation: pop .3s; }
+.section-quiz .card { background: rgba(10, 16, 36, .7); }
+.section-quiz .result-screen { padding: 18px 10px; }
+.quiz-q { font: 600 17px/1.4 var(--display); margin-bottom: 12px; }
+
+/* Retos de código */
+.challenge { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; margin-top: 6px; }
+.challenge > :first-child { flex: 1 1 420px; min-width: 0; }
+.challenge > :last-child { flex: 1 1 260px; min-width: 0; }
+.reqs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.reqs li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--line); font-size: 13.5px; transition: all .2s; }
+.reqs .req-ico { font: 700 13px var(--mono); width: 18px; flex: none; color: var(--dim); }
+.reqs li.ok { border-color: rgba(52, 211, 153, .5); background: rgba(52, 211, 153, .1); }
+.reqs li.ok .req-ico { color: var(--green); }
+.reqs li.no { border-color: rgba(251, 113, 133, .5); background: rgba(251, 113, 133, .08); }
+.reqs li.no .req-ico { color: var(--red); }

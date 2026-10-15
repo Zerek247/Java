@@ -143,16 +143,33 @@
       const done = () => Store.get('ops.sec.' + s.id, false);
       const tb = h('button', { class: done() ? 'done' : '', onclick: () => document.getElementById('sec-' + s.id).scrollIntoView({ behavior: 'smooth' }) }, h('span', { class: 'chk' }, done() ? '✓' : ''), `${i + 1}. ${s.title}`);
       toc.append(tb);
-      const mark = h('button', { class: 'btn sm' + (done() ? '' : ' primary'), onclick: () => {
-        const v = !done(); Store.set('ops.sec.' + s.id, v);
+      const paintDone = v => {
         mark.className = 'btn sm' + (v ? '' : ' primary'); mark.textContent = v ? '✓ Entendido (desmarcar)' : '✓ Marcar como entendido';
         tb.className = v ? 'done' : ''; tb.firstChild.textContent = v ? '✓' : '';
+      };
+      const mark = h('button', { class: 'btn sm', onclick: () => {
+        const v = !done(); Store.set('ops.sec.' + s.id, v); paintDone(v);
         if (v) toast('🎉 ¡Sección completada! Progreso: ' + progress().pct + '%');
-      } }, done() ? '✓ Entendido (desmarcar)' : '✓ Marcar como entendido');
+      } });
+      // Test de la sección: se abre al final de la propia sección
+      const nQ = (TOPIC.QUIZ[s.id] || []).length;
+      const quizBox = h('div', { class: 'section-quiz', style: { display: 'none' } });
+      const testLabel = () => { const b = Store.get('ops.quiz.' + s.id, null); return b === null ? '📝 Test' : `📝 Test · mejor ${b}/5`; };
+      const testBtns = [];
+      const testBtn = cls => { const b = h('button', { class: 'btn sm ' + cls, onclick: () => openQuiz() }, testLabel()); testBtns.push(b); return b; };
+      function openQuiz() {
+        quizBox.style.display = '';
+        const inner = h('div');
+        quizBox.replaceChildren(h('div', { class: 'row', style: { marginBottom: '10px' } }, h('div', { class: 'h3', style: { margin: 0 } }, `📝 Test: ${s.title}`), h('span', { class: 'muted', style: { fontSize: '13px' } }, `4 preguntas al azar de ${nQ} + 1 reto de código · 4/5 para superarlo`), h('span', { class: 'spacer' }), h('button', { class: 'btn sm ghost', onclick: () => { quizBox.style.display = 'none'; testBtns.forEach(b => (b.textContent = testLabel())); } }, '✕ Cerrar')), inner);
+        window.Quiz.section(inner, TOPIC, s.id, () => { paintDone(true); testBtns.forEach(b => (b.textContent = testLabel())); toast('🎉 ¡Test superado! Sección marcada como entendida.'); });
+        quizBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
       secs.append(h('section', { class: 'section card', id: 'sec-' + s.id },
-        h('div', { class: 'section-head' }, h('div', { class: 'section-num' }, i + 1), h('h2', { class: 'h2' }, s.title)),
+        h('div', { class: 'section-head' }, h('div', { class: 'section-num' }, i + 1), h('h2', { class: 'h2', style: { flex: 1 } }, s.title), nQ ? testBtn('') : null),
         s.blocks.map(block),
-        h('div', { class: 'mark-done row' }, mark, TOPIC.SECTIONS[i + 1] ? h('button', { class: 'btn sm ghost', onclick: () => document.getElementById('sec-' + TOPIC.SECTIONS[i + 1].id).scrollIntoView({ behavior: 'smooth' }) }, 'Siguiente: ' + TOPIC.SECTIONS[i + 1].title + ' ↓') : null)));
+        h('div', { class: 'mark-done row' }, nQ ? testBtn('primary') : null, mark, TOPIC.SECTIONS[i + 1] ? h('button', { class: 'btn sm ghost', onclick: () => document.getElementById('sec-' + TOPIC.SECTIONS[i + 1].id).scrollIntoView({ behavior: 'smooth' }) }, 'Siguiente: ' + TOPIC.SECTIONS[i + 1].title + ' ↓') : null),
+        quizBox));
+      paintDone(done());
     });
     root.replaceChildren(h('div', { class: 'theory' }, toc, secs));
     const io = new IntersectionObserver(es => es.forEach(e => {
