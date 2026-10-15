@@ -24,7 +24,7 @@
         { rule: 'Un literal entero sin sufijo **siempre es [[int]]**. Un literal con decimales o exponente sin sufijo **siempre es [[double]]**. Esto explica la mitad de los errores de compilación del examen.', title: 'Regla de oro' },
         { deep: '**Complemento a dos.** Los enteros con signo guardan el signo en el bit más alto (1 = negativo). `-1` son todos los bits en 1. Por eso el rango es asimétrico: hay un negativo más que positivos (`-128…127`). Y por eso `-Integer.MIN_VALUE` vuelve a ser `Integer.MIN_VALUE`: el positivo `2147483648` no existe en un int.', title: 'Cómo funciona por dentro' },
         { code: 'System.out.println(Byte.MIN_VALUE + " a " + Byte.MAX_VALUE);\nSystem.out.println(Integer.MAX_VALUE);\nSystem.out.println(-Integer.MIN_VALUE);   // ¡sigue siendo negativo!\nSystem.out.println((int) Character.MAX_VALUE);', note: 'Abre "Variables y bits" en el Lab para ver los bits reales.' },
-        { trap: '[[boolean]] **NO es un número** (no como en C). No existe conversión entre boolean y ningún tipo numérico, **ni siquiera con cast**: `(int) true` no compila. Tampoco `if (1)`.' },
+        { trap: '[[boolean]] **NO es un número** (no como en C). No existe conversión entre boolean y ningún tipo numérico, **ni siquiera con cast**: `(int) true` no compila. Tampoco `boolean b = 1;`.' },
         { tip: 'Memoriza en BYTES: byte **1**, short **2**, char **2**, int **4**, long **8**, float **4**, double **8**. El char es el único entero **sin signo**.' }
       ]
     },
@@ -123,10 +123,10 @@
         { p: '`<` `>` `<=` `>=` solo funcionan con números (incluido `char`). `==` y `!=` funcionan con números, con dos boolean o con dos referencias. Todos devuelven [[boolean]].' },
         { rule: 'Antes de comparar números se aplica **promoción numérica**: `10 == 10.0` es `true` (10 se vuelve 10.0) y `\'a\' == 97` es `true` (el char se vuelve int).', title: 'Comparar promueve' },
         { code: "System.out.println(10 == 10.0);\nSystem.out.println('a' == 97);\nSystem.out.println('a' < 'b');\nSystem.out.println(Double.NaN == Double.NaN);" },
-        { trap: 'Con objetos, `==` compara **referencias** (¿es el mismo objeto?), no el contenido. Los literales String van al **String pool** y se reutilizan; los creados en ejecución son objetos nuevos.' },
-        { code: 'String a = "hola";\nString b = "hola";\nString c = "ho";\nString d = c + "la";       // se crea en ejecución\nfinal String e = "ho";\nString f = e + "la";       // constante → se calcula al compilar\nSystem.out.println(a == b);\nSystem.out.println(a == d);\nSystem.out.println(a == f);' },
-        { trap: '`if (x = 5)` **no compila**: `=` asigna y el resultado es int. Pero `if (flag = true)` **sí compila** (el resultado es boolean) ¡y siempre entra!' },
-        { code: 'boolean flag = false;\nif (flag = true) System.out.println("entré: flag = " + flag);' }
+        { tip: 'Aquí usamos `==` solo con **números y boolean**. Comparar Strings con `==` (referencias y String pool) es parte del tema **Manipulating text**.' },
+        { code: 'System.out.println(5 == 5.0);\nSystem.out.println(true != false);\nSystem.out.println(3 + 4 == 7);    // + va antes que ==', note: 'Primero se calcula lo de mayor precedencia y al final se compara.' },
+        { trap: 'Confundir `=` con `==`: `boolean b = (x = 5);` **no compila**, porque `=` asigna y el resultado es int. Pero `boolean r = (flag = true);` **sí compila** (el resultado es boolean)… y además cambia `flag`.' },
+        { code: 'boolean flag = false;\nboolean r = (flag = true);   // ¡asigna, no compara!\nSystem.out.println(r + " " + flag);' }
       ]
     },
     {
@@ -226,11 +226,10 @@
             '¿Hay `&&`/`||` con efectos secundarios a la derecha? → ¿se cortocircuitan?',
             '¿`&&` y `||` mezclados sin paréntesis? → `&&` primero.',
             '¿String con `+`? → izquierda a derecha: los números antes del String se suman.',
-            '¿`==` con String? → compara referencias (pool vs. objeto nuevo).',
-            '¿Ternario con tipos mezclados? → el tipo lo deciden las dos ramas.',
+                        '¿Ternario con tipos mezclados? → el tipo lo deciden las dos ramas.',
             '¿Cast seguido de operación? → el cast solo afecta al operando inmediato.',
             '¿Variable local sin inicializar? → no compila al leerla.',
-            '¿`if (x = 5)`? → no compila. ¿`if (b = true)`? → compila.',
+            '¿`=` donde debería ir `==`? → `boolean b = (x = 5)` no compila; `(flag = true)` sí compila y asigna.',
             '¿Overflow? → no hay error, el valor da la vuelta.'
           ]
         },
@@ -260,8 +259,8 @@
     { code: 'long l = 10;\nint i = (int) l;', ok: true, why: 'Estrechamiento explícito con cast: siempre permitido entre numéricos.' },
     { code: 'boolean b = (boolean) 1;', ok: false, why: 'Nunca se puede castear entre boolean y números.' },
     { code: 'int x = 5;\nx + 1;', ok: false, why: '"not a statement": una expresión suelta no es una sentencia.' },
-    { code: 'int x = 5;\nif (x = 6) { }', ok: false, why: 'x = 6 vale 6 (int), y if necesita boolean.' },
-    { code: 'boolean f = false;\nif (f = true) { }', ok: true, why: 'f = true vale true (boolean): compila y siempre entra.' },
+    { code: 'int x = 5;\nboolean b = (x = 6);', ok: false, why: 'x = 6 asigna y vale 6 (int): un int no se convierte a boolean.' },
+    { code: 'boolean f = false;\nboolean g = (f = true);', ok: true, why: 'f = true asigna y vale true (boolean): compila. Ojo, no compara.' },
     { code: "char c = 'a';\nchar d = c + 1;", ok: false, why: 'c + 1 es int y c no es constante.' },
     { code: "char c = 'a';\nc++;", ok: true, why: '++ lleva cast implícito: c pasa a ser b.' },
     { code: 'int x = 1_000__000;', ok: true, why: 'Varios guiones bajos seguidos entre dígitos son válidos.' },
@@ -350,7 +349,7 @@
     { code: 'System.out.println((byte) 130 + (short) -1);', opts: ['129', '-127', '127', 'Compilation fails'], a: 1, why: '(byte) 130 = -126 (130 − 256). -126 + (-1) = -127, de tipo int.' },
     { code: 'int a = 3, b = 4;\nint c = a > b ? a : b > 3 ? ++b : --a;\nSystem.out.println(a + " " + b + " " + c);', opts: ['3 5 5', '2 4 2', '3 4 4', '3 5 4'], a: 0, why: 'Ternario anidado a la derecha: a > b es false → se evalúa b > 3 ? ++b : --a → true → ++b = 5. --a nunca corre.' },
     { code: 'long x = 5;\nfloat f = x;\ndouble d = f;\nint i = d;\nSystem.out.println(i);', opts: ['5', '5.0', 'No compila por la línea 2', 'No compila por la línea 4'], a: 3, why: 'long → float y float → double son ampliaciones. double → int (línea 4) requiere cast.' },
-    { code: 'int x = 0;\nif (x++ == 0 & ++x == 2 | x++ == 5)\n    System.out.println("yes " + x);\nelse\n    System.out.println("no " + x);', opts: ['yes 2', 'yes 3', 'no 3', 'no 2'], a: 1, why: '& y | no hacen cortocircuito: se evalúan los tres lados. true & true = true; | false = true. x terminó en 3.' },
+    { code: 'int x = 0;\nboolean r = x++ == 0 & ++x == 2 | x++ == 5;\nSystem.out.println(r + " " + x);', opts: ['true 2', 'true 3', 'false 3', 'false 2'], a: 1, why: '& va antes que |, y ninguno hace cortocircuito: se evalúan los tres lados. (true & true) | false = true, y x terminó en 3.' },
     { code: 'int i = 1;\ni += i++ + ++i;\nSystem.out.println(i);', opts: ['4', '5', '6', '7'], a: 1, why: 'Se guarda i = 1 primero. i++ vale 1 (i = 2), ++i vale 3. 1 + (1 + 3) = 5.' },
     { code: 'System.out.println(-5 % 3 + " " + 5 % -3 + " " + -5 / 2);', opts: ['-2 2 -2', '1 -1 -3', '2 -2 -3', '-2 2 -3'], a: 0, why: '% toma el signo del dividendo: -5 % 3 = -2, 5 % -3 = 2. -5 / 2 trunca hacia cero: -2.' },
     { code: 'final int k = 100;\nbyte b1 = k;     // línea 2\nint m = 100;\nbyte b2 = m;     // línea 4', opts: ['Compila todo', 'Falla la línea 2', 'Falla la línea 4', 'Fallan la 2 y la 4'], a: 2, why: 'k es final con constante → constante de compilación que cabe en byte. m no es final → no es constante.' },
@@ -401,10 +400,9 @@
     { name: 'Cortocircuito', code: 'int n = 0;\nboolean r1 = (n > 0) && (n++ > 0);\nboolean r2 = (n > 0) || (n++ >= 0);\nboolean r3 = (n > 0) | (n++ > 0);\nSystem.out.println(n + " " + r1 + " " + r2 + " " + r3);' },
     { name: 'Casting que corta bits', code: 'int i = 300;\nbyte b = (byte) i;\nshort s = (short) 70000;\nchar c = (char) 66;\nint t = (int) -7.9;\nSystem.out.println(b + " " + s + " " + c + " " + t);' },
     { name: 'Constantes que sí caben', code: "final int k = 100;\nbyte b = k;\nchar c = 'A' + 2;\nshort s = 'z';\nSystem.out.println(b + \" \" + c + \" \" + s);" },
-    { name: 'String: concatenación y pool', code: 'String s1 = 1 + 2 + "x" + 1 + 2;\nString a = "java";\nString b = "ja";\nString c = b + "va";\nSystem.out.println(s1);\nSystem.out.println(a == c);\nSystem.out.println(a == "ja" + "va");' },
+    { name: 'Concatenación con +', code: 'String s1 = 1 + 2 + "x" + 1 + 2;\nString s2 = "x" + (1 + 2);\nString s3 = "" + \'a\' + \'b\';\nString s4 = \'a\' + \'b\' + "";\nSystem.out.println(s1);\nSystem.out.println(s2);\nSystem.out.println(s3 + " " + s4);' },
     { name: 'Ternario y su tipo', code: "int i = 5;\nSystem.out.println(true ? 1 : 2.0);\nSystem.out.println(false ? 1 : 'A');\nSystem.out.println(false ? i : 'A');" },
-    { name: 'Error: lossy conversion', code: 'byte a = 1;\nbyte b = 2;\nbyte c = a + b;   // ¿por qué falla?\nSystem.out.println(c);' },
-    { name: 'Clase completa (estilo examen)', code: 'public class Main {\n    public static void main(String[] args) {\n        int x = 3;\n        long y = x * 2L;\n        float z = y / 4;\n        System.out.println(x + y + z);\n    }\n}' }
+    { name: 'Error: lossy conversion', code: 'byte a = 1;\nbyte b = 2;\nbyte c = a + b;   // ¿por qué falla?\nSystem.out.println(c);' }
   ];
 
   window.TOPICS = window.TOPICS || {};

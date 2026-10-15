@@ -39,6 +39,33 @@ for (const s of T.SECTIONS) {
     ch.hint && ch.why ? pass++ : bad('RETO sin pista/explicación', s.id, ch.task);
   }
 }
+// Guardián del tema: nada de control de flujo, clases, métodos ni comparar Strings con ==
+const OFF_TOPIC = /\b(if|else|for|while|do|switch|case|class|new|return|void|static|Math|equals)\b/;
+const stringEq = code => {
+  const r = J.run(code);
+  if (!r.prog) return false;
+  let found = false;
+  (function walk(n) {
+    if (!n || typeof n !== 'object') return;
+    if (n.k === 'bin' && n.kind === 'cmp' && n.pt === 'String') found = true;
+    for (const v of Object.values(n)) if (v && typeof v === 'object' && v !== n.b) Array.isArray(v) ? v.forEach(walk) : walk(v);
+  })(r.prog.ast);
+  return found;
+};
+const allCode = [
+  ...T.COMPILA.map(q => ['COMPILA', q.code]), ...T.PREDICE.map(q => ['PREDICE', q.code]),
+  ...T.EXAMEN.filter(q => q.code).map(q => ['EXAMEN', q.code]), ...T.RAYOSX.map(q => ['RAYOSX', q.code]),
+  ...T.LAB_EXAMPLES.map(q => ['LAB', q.code]), ...T.ESCALERA.map(e => ['ESCALERA', e]), ...T.BITRETOS.map(q => ['BIT', q.e]),
+  ...Object.values(Q).flat().filter(q => q.code).map(q => ['QUIZ', q.code]),
+  ...Object.values(QM.CHALLENGES).flat().flatMap(c => [['RETO', c.starter], ['RETO', c.solution]]),
+  ...T.SECTIONS.flatMap(s => s.blocks.filter(b => b.code).map(b => ['TEORIA ' + s.id, b.code]))
+];
+for (const [where, code] of allCode) {
+  const clean = code.replace(/\/\/[^\n]*/g, '').replace(/"(?:\\.|[^"\\])*"/g, '""');
+  if (OFF_TOPIC.test(clean)) bad('FUERA DEL TEMA', where, JSON.stringify(code), '→', clean.match(OFF_TOPIC)[0]);
+  else if (stringEq(code)) bad('FUERA DEL TEMA (== con String)', where, JSON.stringify(code));
+  else pass++;
+}
 // Las trampas típicas no deben pasar los retos
 const cheat = (sec, i, code) => { QM.check(QM.CHALLENGES[sec][i], code).ok ? bad('RETO tramposo aceptado', sec, code) : pass++; };
 cheat('aritmeticos', 2, 'System.out.println(3000000000L);');
