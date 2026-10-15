@@ -439,3 +439,32 @@ kbd { font-size: 11px; padding: 1px 6px; border-radius: 5px; border: 1px solid v
 .sec-status-ico { font-size: 22px; }
 .sec-badge { background: rgba(102, 114, 156, .15); color: var(--muted); border-color: var(--line2); }
 .sec-badge.ok { background: rgba(52, 211, 153, .15); color: var(--green); border-color: rgba(52, 211, 153, .45); }
+
+/* Pestaña Bits */
+.bit-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.bit-field { display: block; min-width: 0; }
+.bit-field .mem-title { margin-bottom: 6px; display: block; }
+.bit-inp { display: flex; align-items: stretch; }
+.bit-prefix { display: grid; place-items: center; padding: 0 10px; border: 1px solid var(--line2); border-right: 0; border-radius: 12px 0 0 12px; background: var(--panel2); color: var(--muted); font: 600 14px var(--mono); }
+.bit-prefix + .answer-input { border-radius: 0 12px 12px 0; }
+.bit-err { min-height: 18px; font-size: 12px; color: var(--red); margin-top: 4px; }
+.bitgrid-lg { gap: 4px; margin-top: 8px; }
+.bitgrid-lg .bit { width: 30px; height: 36px; font-size: 14px; }
+.bit-col { display: flex; flex-direction: column; align-items: center; }
+.bit-col .bit.nib { margin-right: 0; }
+.bit-col:has(.nib) { margin-right: 8px; }
+.bit-w { font: 600 11px var(--mono); color: var(--dim); margin-top: 3px; }
+.bit-sum { margin-top: 8px; padding: 10px 12px; border-radius: 10px; background: #060a18; border: 1px solid var(--line); font-size: 13.5px; color: #cbd3f5; word-break: break-word; }
+.twos { display: grid; gap: 6px; margin-top: 6px; }
+.twos > div { display: flex; gap: 12px; flex-wrap: wrap; align-items: baseline; }
+.twos .muted { min-width: 210px; font-size: 13px; }
+.twos code { font: 600 14px var(--mono); letter-spacing: .04em; }
+.twos code.hl { color: var(--cyan); }
+.calc-out { margin-top: 14px; }
+.calc-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 6px 10px; border-radius: 8px; }
+.calc-row.sep { border-top: 1px dashed var(--line2); margin-top: 4px; padding-top: 8px; }
+.calc-row.res { background: rgba(34, 211, 238, .08); border: 1px solid rgba(34, 211, 238, .35); }
+.calc-lbl { color: var(--muted); font-size: 13px; }
+.calc-bits { font-size: 13px; letter-spacing: .03em; overflow-x: auto; white-space: nowrap; }
+.calc-val { font-weight: 700; }
+@media (max-width: 700px) { .calc-row { grid-template-columns: 1fr; gap: 2px; } }

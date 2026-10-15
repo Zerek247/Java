@@ -19,7 +19,7 @@
       { id: 'fields', num: '02', title: 'Java OOA - Using fields and methods', q: 32 }
     ]
   }];
-  const TABS = [['teoria', '📘 Teoría'], ['lab', '🧪 Laboratorio'], ['juegos', '🎮 Juegos'], ['examen', '🎯 Examen']];
+  const TABS = [['teoria', '📘 Teoría'], ['lab', '🧪 Laboratorio'], ['bits', '🔢 Bits'], ['juegos', '🎮 Juegos'], ['examen', '🎯 Examen']];
 
   // ───────── Progreso ─────────
   function progress() {
@@ -104,6 +104,7 @@
     const api = { back: () => (location.hash = '#/ops/juegos') };
     switch (route.tab) {
       case 'lab': return lab(content);
+      case 'bits': return window.BitsTool(content);
       case 'juegos': {
         if (route.sub) {
           const g = window.GAMES.find(x => x.id === route.sub);
