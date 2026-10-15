@@ -11,7 +11,7 @@
   const group = (s, n = 4) => s.replace(new RegExp(`(.{${n}})(?=.)`, 'g'), '$1 ');
   const sup = n => String(n).split('').map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d] || d).join('');
 
-  function BitsTool(root) {
+  function BitsTool(root, opts = {}) {
     // Estado: tipo + bits sin signo (BigInt) para enteros; para float/double, el valor numérico
     let st = { t: 'byte', u: 200n, f: 3.14 };
     const view = h('div');
@@ -168,7 +168,7 @@
         h('div', { class: 'grid2', style: { marginTop: '16px' } },
           h('div', { class: 'card' }, h('div', { class: 'mem-title' }, '🔁 ¿Qué pasa si lo casteo?'), casts),
           h('div', { class: 'card' }, h('div', { class: 'mem-title' }, '✍️ Cómo se escribe en Java'), h('div', { class: 'code-blk' }, h('pre', { html: highlight(lits.join('\n')) })),
-            h('button', { class: 'btn sm', style: { marginTop: '10px' }, onclick: () => window.App.openLab(`${t} x = ${needCast && !fits ? `(${t}) ` : ''}0b${group(bits, 4).replace(/ /g, '_')}${L};\nSystem.out.println(x);\nSystem.out.println(${t === 'char' ? '(int) x' : '~x'});`) }, '🧪 Probarlo en el Lab'))));
+            opts.popup ? null : h('button', { class: 'btn sm', style: { marginTop: '10px' }, onclick: () => window.App.openLab(`${t} x = ${needCast && !fits ? `(${t}) ` : ''}0b${group(bits, 4).replace(/ /g, '_')}${L};\nSystem.out.println(x);\nSystem.out.println(${t === 'char' ? '(int) x' : '~x'});`) }, '🧪 Probarlo en el Lab'))));
     }
 
     function drawFloat(src) {
@@ -235,7 +235,7 @@
           h('div', { class: 'calc-row sep' }, h('span', { class: 'mono calc-lbl', style: { color: 'var(--pink)' } }, op === '~' ? '~a' : 'a ' + op + ' b')),
           row('=', vr, 'res'),
           step && step.notes.length ? h('ul', { class: 'stp-notes', style: { marginTop: '10px' } }, step.notes.map(n => h('li', { html: md(n) }))) : null,
-          h('button', { class: 'btn sm', style: { marginTop: '10px' }, onclick: () => window.App.openLab(code) }, '🧪 Ver paso a paso en el Lab'));
+          opts.popup ? null : h('button', { class: 'btn sm', style: { marginTop: '10px' }, onclick: () => window.App.openLab(code) }, '🧪 Ver paso a paso en el Lab'));
       }
       a.addEventListener('input', run); b.addEventListener('input', run);
       run();
@@ -250,7 +250,7 @@
     })();
 
     root.replaceChildren(
-      h('div', { class: 'tip', style: { marginBottom: '16px' } }, h('span', { class: 'blk-label' }, '🔢 Convertidor de bits'), h('p', { html: md('Escribe en **cualquier** campo (decimal, binario, hex u octal) y los demás se actualizan. Toca los bits para encenderlos o apagarlos y mira cómo cambia el número. Escribe un número que **no cabe** (ej. `300` en byte) para ver qué haría un cast.') })),
+      h('div', { class: 'tip', style: { marginBottom: '16px' } }, h('span', { class: 'blk-label' }, '🔢 Cómo usarlo'), h('p', { html: md('Escribe en **cualquier** campo (decimal, binario, hex u octal) y los demás se actualizan. Toca los bits para encenderlos o apagarlos y mira cómo cambia el número. Escribe un número que **no cabe** (ej. `300` en byte) para ver qué haría un cast.') })),
       h('div', { class: 'card', style: { marginBottom: '16px' } },
         h('div', { class: 'mem-title' }, 'Tipo'), typeBtns,
         h('div', { style: { marginTop: '14px' } }, fields)),
@@ -258,5 +258,32 @@
     draw();
   }
 
+  // ── Panel flotante: se crea una vez y conserva su estado entre aperturas ──
+  let pop = null, fab = null;
+  function ensure() {
+    if (pop) return pop;
+    const body = h('div', { class: 'bits-pop-body' });
+    pop = h('aside', { class: 'bits-pop', role: 'dialog', 'aria-label': 'Convertidor de bits' },
+      h('div', { class: 'bits-pop-head' },
+        h('div', null, h('b', null, '🔢 Convertidor de bits'), h('div', { class: 'muted', style: { fontSize: '12px' } }, 'Tu ejercicio sigue ahí detrás · Esc para cerrar')),
+        h('span', { class: 'spacer' }),
+        h('button', { class: 'btn sm ghost', 'aria-label': 'Cerrar', onclick: () => close() }, '✕')),
+      body);
+    document.body.append(pop);
+    BitsTool(body, { popup: true });
+    return pop;
+  }
+  function open() { ensure().classList.add('open'); document.body.classList.add('bits-open'); }
+  function close() { if (pop) pop.classList.remove('open'); document.body.classList.remove('bits-open'); }
+  function toggle() { pop && pop.classList.contains('open') ? close() : open(); }
+  fab = h('button', { class: 'bits-fab', title: 'Convertidor de bits (tecla B)', onclick: toggle }, '🔢', h('span', null, 'Bits'));
+  document.body.append(fab);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && document.body.classList.contains('bits-open')) close();
+    const tag = (e.target.tagName || '').toLowerCase();
+    if ((e.key === 'b' || e.key === 'B') && !e.ctrlKey && !e.metaKey && !e.altKey && tag !== 'input' && tag !== 'textarea' && tag !== 'select' && document.body.classList.contains('in-ops')) toggle();
+  });
+
   window.BitsTool = BitsTool;
+  window.BitsPopup = { open, close, toggle };
 })();

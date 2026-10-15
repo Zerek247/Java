@@ -19,7 +19,9 @@
       { id: 'fields', num: '02', title: 'Java OOA - Using fields and methods', q: 32 }
     ]
   }];
-  const TABS = [['teoria', '📘 Teoría'], ['lab', '🧪 Laboratorio'], ['bits', '🔢 Bits'], ['juegos', '🎮 Juegos'], ['examen', '🎯 Examen']];
+  const TABS = [['teoria', '📘 Teoría'], ['lab', '🧪 Laboratorio'], ['juegos', '🎮 Juegos'], ['examen', '🎯 Examen']];
+  // Bits no es una pestaña: abre un panel flotante para no perder lo que estás haciendo
+  const bitsBtn = cls => h('button', { class: cls, title: 'Abre el convertidor sin salir de esta página (tecla B)', onclick: () => window.BitsPopup.toggle() }, '🔢 Bits ↗');
 
   // ───────── Progreso ─────────
   function progress() {
@@ -50,7 +52,7 @@
         m.topics.map((t, i) => [
           h('button', { class: 'side-topic' + (route.topic === t.id ? ' active' : ''), disabled: !t.live, onclick: () => (location.hash = `#/${t.id}/teoria`), title: t.live ? '' : 'Próximamente' },
             h('span', { class: 'num' }, String(i + 1).padStart(2, '0')), h('span', null, t.title.replace(/^.* - /, '')), t.live ? h('span', { class: 'lock', style: { color: 'var(--lime)' } }, p.pct + '%') : h('span', { class: 'lock' }, '🔒')),
-          route.topic === t.id ? h('div', { class: 'side-sub' }, TABS.map(([k, l]) => h('button', { class: route.tab === k ? 'active' : '', onclick: () => (location.hash = `#/${t.id}/${k}`) }, l))) : null
+          route.topic === t.id ? h('div', { class: 'side-sub' }, TABS.map(([k, l]) => h('button', { class: route.tab === k ? 'active' : '', onclick: () => (location.hash = `#/${t.id}/${k}`) }, l)), bitsBtn('')) : null
         ]))),
       h('div', { class: 'side-foot', html: '💡 <b>Cómo estudiar:</b> lee una sección de teoría → ejecuta sus ejemplos → juega el juego relacionado → vuelve al examen. Repetir es la clave.' }));
   }
@@ -99,12 +101,11 @@
           h('h1', { class: 'h1', style: { marginBottom: '4px' } }, 'Operators, ', h('span', { class: 'grad-text' }, 'Promotion'), ' & Casting'),
           h('p', { class: 'muted', style: { margin: 0 } }, 'Cómo opera Java con los valores, cómo iguala los tipos y cómo los convierte. Las reglas exactas que pide la certificación.')),
         h('div', { class: 'ring', style: { '--p': p.pct }, title: 'progreso del tema' }, h('span', null, p.pct + '%'))),
-      h('div', { class: 'tabs' }, TABS.map(([k, l]) => h('button', { class: 'tab' + (route.tab === k ? ' active' : ''), onclick: () => (location.hash = `#/ops/${k}`) }, l))),
+      h('div', { class: 'tabs' }, TABS.map(([k, l]) => h('button', { class: 'tab' + (route.tab === k ? ' active' : ''), onclick: () => (location.hash = `#/ops/${k}`) }, l)), bitsBtn('tab tab-pop')),
       content));
     const api = { back: () => (location.hash = '#/ops/juegos') };
     switch (route.tab) {
       case 'lab': return lab(content);
-      case 'bits': return window.BitsTool(content);
       case 'juegos': {
         if (route.sub) {
           const g = window.GAMES.find(x => x.id === route.sub);
@@ -225,6 +226,8 @@
   function route() {
     const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
     const r = { topic: parts[0] || null, tab: parts[1] || 'teoria', sub: parts[2] || null };
+    if (r.tab === 'bits') { r.tab = 'teoria'; history.replaceState(null, '', '#/ops/teoria'); setTimeout(() => window.BitsPopup.open()); }
+    document.body.classList.toggle('in-ops', r.topic === 'ops');
     sidebar.classList.remove('open');
     drawSidebar(r);
     if (r.topic === 'ops') topicPage(view, r); else home(view);

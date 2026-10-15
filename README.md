@@ -30,7 +30,7 @@ O desde la terminal: `npm i -g vercel` y luego `vercel --prod`.
 |---|---|
 | 📘 Teoría | 13 secciones con ejemplos ejecutables, reglas, trampas de examen, widgets y al final de cada una, su **📝 Test** (4 preguntas al azar + 1 **reto de código** que escribes tú y el motor valida); al sacar 4/5 la sección se completa sola |
 | 🧪 Laboratorio | Editor de Java: salida, paso a paso con memoria animada, traza, árbol de tipos y bits |
-| 🔢 Bits | Convertidor decimal / binario / hex / octal por tipo, bits clicables, complemento a dos, IEEE 754 y calculadora de bits |
+| 🔢 Bits (panel flotante) | Se abre encima de cualquier página (botón flotante o tecla B) sin perder tu ejercicio. Convertidor decimal / binario / hex / octal por tipo, bits clicables, complemento a dos, IEEE 754 y calculadora de bits |
 | 🎮 Juegos | Promotion Arena, ¿Compila?, Predice la salida, La Escalera, Bit Lab, Rayos X, Flashcards |
 | 🎯 Examen | Simulacro final: 1 pregunta de cada sección + 5 integradoras + 2 retos de código, con desglose de dónde fallaste |
 
@@ -47,7 +47,7 @@ node tests/content.test.js    # las respuestas de los juegos coinciden con el mo
 - `js/ui.js` — editor, consola, depurador paso a paso, árbol de tipos
 - `js/content-ops.js` — teoría y bancos de preguntas de los juegos del tema 1
 - `js/quiz-ops.js` — preguntas y retos de código por sección, y el validador de retos
-- `js/bits.js` — pestaña Bits (convertidor y calculadora)
+- `js/bits.js` — panel flotante de Bits (convertidor y calculadora)
 - `js/widgets.js` — widgets interactivos de la teoría
 - `js/games.js` — los juegos
 - `js/app.js` — menú, rutas y progreso
