@@ -143,33 +143,37 @@
       const done = () => Store.get('ops.sec.' + s.id, false);
       const tb = h('button', { class: done() ? 'done' : '', onclick: () => document.getElementById('sec-' + s.id).scrollIntoView({ behavior: 'smooth' }) }, h('span', { class: 'chk' }, done() ? '✓' : ''), `${i + 1}. ${s.title}`);
       toc.append(tb);
-      const paintDone = v => {
-        mark.className = 'btn sm' + (v ? '' : ' primary'); mark.textContent = v ? '✓ Entendido (desmarcar)' : '✓ Marcar como entendido';
+      // Estado de la sección: se completa automáticamente al superar su test
+      const best = () => Store.get('ops.quiz.' + s.id, null);
+      const status = h('div', { class: 'sec-status' });
+      const headBadge = h('span', { class: 'pill sec-badge' });
+      const paintDone = () => {
+        const v = done(), b = best();
         tb.className = v ? 'done' : ''; tb.firstChild.textContent = v ? '✓' : '';
+        headBadge.textContent = v ? '✓ Completada' : '○ Pendiente';
+        headBadge.classList.toggle('ok', v);
+        status.className = 'sec-status' + (v ? ' ok' : '');
+        status.replaceChildren(
+          h('span', { class: 'sec-status-ico' }, v ? '✅' : '🎯'),
+          h('span', { style: { flex: 1, minWidth: '200px' } }, v
+            ? h('span', null, h('b', null, 'Sección completada'), ` · mejor resultado en el test: ${b ?? '–'}/5. Puedes repetir el test cuando quieras para repasar.`)
+            : h('span', null, h('b', null, 'Supera el test (4 de 5) para completar esta sección.'), b !== null ? ` Tu mejor resultado hasta ahora: ${b}/5.` : '')),
+          TOPIC.SECTIONS[i + 1] ? h('button', { class: 'btn sm' + (v ? ' primary' : ' ghost'), onclick: () => document.getElementById('sec-' + TOPIC.SECTIONS[i + 1].id).scrollIntoView({ behavior: 'smooth' }) }, 'Siguiente: ' + TOPIC.SECTIONS[i + 1].title + ' ↓')
+            : h('button', { class: 'btn sm' + (v ? ' primary' : ' ghost'), onclick: () => (location.hash = '#/ops/examen') }, '🎯 Ir al simulacro final →'));
       };
-      const mark = h('button', { class: 'btn sm', onclick: () => {
-        const v = !done(); Store.set('ops.sec.' + s.id, v); paintDone(v);
-        if (v) toast('🎉 ¡Sección completada! Progreso: ' + progress().pct + '%');
-      } });
-      // Test de la sección: se abre al final de la propia sección
+      // Test de la sección, siempre visible al final
       const nQ = (TOPIC.QUIZ[s.id] || []).length;
-      const quizBox = h('div', { class: 'section-quiz', style: { display: 'none' } });
-      const testLabel = () => { const b = Store.get('ops.quiz.' + s.id, null); return b === null ? '📝 Test' : `📝 Test · mejor ${b}/5`; };
-      const testBtns = [];
-      const testBtn = cls => { const b = h('button', { class: 'btn sm ' + cls, onclick: () => openQuiz() }, testLabel()); testBtns.push(b); return b; };
-      function openQuiz() {
-        quizBox.style.display = '';
-        const inner = h('div');
-        quizBox.replaceChildren(h('div', { class: 'row', style: { marginBottom: '10px' } }, h('div', { class: 'h3', style: { margin: 0 } }, `📝 Test: ${s.title}`), h('span', { class: 'muted', style: { fontSize: '13px' } }, `4 preguntas al azar de ${nQ} + 1 reto de código · 4/5 para superarlo`), h('span', { class: 'spacer' }), h('button', { class: 'btn sm ghost', onclick: () => { quizBox.style.display = 'none'; testBtns.forEach(b => (b.textContent = testLabel())); } }, '✕ Cerrar')), inner);
-        window.Quiz.section(inner, TOPIC, s.id, () => { paintDone(true); testBtns.forEach(b => (b.textContent = testLabel())); toast('🎉 ¡Test superado! Sección marcada como entendida.'); });
-        quizBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      const quizInner = h('div');
+      const quizBox = h('div', { class: 'section-quiz' },
+        h('div', { class: 'row', style: { marginBottom: '10px' } }, h('div', { class: 'h3', style: { margin: 0 } }, `📝 Test de la sección ${i + 1}`), h('span', { class: 'muted', style: { fontSize: '13px' } }, `4 preguntas al azar de ${nQ} + 1 reto de código · cada intento es distinto`)),
+        quizInner);
       secs.append(h('section', { class: 'section card', id: 'sec-' + s.id },
-        h('div', { class: 'section-head' }, h('div', { class: 'section-num' }, i + 1), h('h2', { class: 'h2', style: { flex: 1 } }, s.title), nQ ? testBtn('') : null),
+        h('div', { class: 'section-head' }, h('div', { class: 'section-num' }, i + 1), h('h2', { class: 'h2', style: { flex: 1 } }, s.title), nQ ? headBadge : null),
         s.blocks.map(block),
-        h('div', { class: 'mark-done row' }, nQ ? testBtn('primary') : null, mark, TOPIC.SECTIONS[i + 1] ? h('button', { class: 'btn sm ghost', onclick: () => document.getElementById('sec-' + TOPIC.SECTIONS[i + 1].id).scrollIntoView({ behavior: 'smooth' }) }, 'Siguiente: ' + TOPIC.SECTIONS[i + 1].title + ' ↓') : null),
-        quizBox));
-      paintDone(done());
+        nQ ? quizBox : null,
+        status));
+      if (nQ) window.Quiz.section(quizInner, TOPIC, s.id, () => { paintDone(); toast(`🎉 ¡Sección ${i + 1} completada! Progreso del tema: ${progress().pct}%`); }, () => paintDone());
+      paintDone();
     });
     root.replaceChildren(h('div', { class: 'theory' }, toc, secs));
     const io = new IntersectionObserver(es => es.forEach(e => {

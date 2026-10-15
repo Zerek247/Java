@@ -450,7 +450,7 @@
       root.replaceChildren(h('div', { class: 'card result-screen fade-in' },
         h('div', { class: 'eyebrow' }, opts.inline ? (passed ? '✅ Test superado' : `📚 Aún no (necesitas ${passPct}%) — repasa y reintenta`) : (passed ? '✅ APROBADO' : `❌ NO APROBADO (${passPct}% requerido)`)),
         h('div', { class: 'score grad-text', style: opts.inline ? { fontSize: '48px' } : null }, `${right}/${qs.length}`),
-        h('p', { class: 'muted', style: { margin: '0 0 6px' } }, `${pct}%` + (opts.inline && passed ? ' · sección marcada como entendida ✓' : '')),
+        h('p', { class: 'muted', style: { margin: '0 0 6px' } }, `${pct}%` + (opts.inline && passed ? ' · ✅ sección completada' : '')),
         best ? h('p', { style: { color: 'var(--lime)', fontWeight: 600 } }, '⭐ ¡Nuevo récord personal!') : null,
         h('div', { class: 'row', style: { justifyContent: 'center', marginTop: '14px' } },
           h('button', { class: 'btn primary', onclick: opts.again }, opts.inline ? '↻ Otro test (preguntas nuevas)' : '↻ Nuevo examen'),
@@ -548,13 +548,16 @@
   }
 
   // Test de una sección: 5 preguntas al azar de su banco; con 4/5 se marca como entendida
-  function sectionQuiz(root, topic, secId, onPass) {
+  // onPass: al superarlo por primera vez (la sección se completa sola) · onFinish: al terminar cualquier intento
+  function sectionQuiz(root, topic, secId, onPass, onFinish) {
     runQuiz(root, topic, {
       questions: [...shuffle(topic.QUIZ[secId] || []).slice(0, (topic.CHALLENGES[secId] || []).length ? 4 : 5), ...shuffle(topic.CHALLENGES[secId] || []).slice(0, 1)], inline: true, pass: 0.8,
-      again: () => sectionQuiz(root, topic, secId, onPass),
+      again: () => sectionQuiz(root, topic, secId, onPass, onFinish),
       onDone(right, total) {
         const best = saveBest('ops.quiz.' + secId, right);
-        if (right / total >= 0.8) { Store.set('ops.sec.' + secId, true); onPass && onPass(); }
+        const wasDone = Store.get('ops.sec.' + secId, false);
+        if (right / total >= 0.8) Store.set('ops.sec.' + secId, true);
+        if (right / total >= 0.8 && !wasDone) onPass && onPass(); else onFinish && onFinish();
         return best;
       }
     });
@@ -581,7 +584,7 @@
   // Enter = botón "Siguiente" en cualquier juego
   document.addEventListener('keydown', e => {
     if (e.key !== 'Enter' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    const all = document.querySelectorAll('.feedback .btn.primary');
+    const all = [...document.querySelectorAll('.feedback .btn.primary')].filter(b => { const r = b.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; });
     const fb = all[all.length - 1];
     if (fb && document.activeElement !== fb) { e.preventDefault(); fb.click(); }
   });

@@ -28,7 +28,7 @@ O desde la terminal: `npm i -g vercel` y luego `vercel --prod`.
 
 | Sección | Qué hace |
 |---|---|
-| 📘 Teoría | 13 secciones con ejemplos ejecutables, reglas, trampas de examen, widgets y un **📝 Test** por sección (4 preguntas al azar + 1 **reto de código** que escribes tú y el motor valida; 4/5 la marca como entendida) |
+| 📘 Teoría | 13 secciones con ejemplos ejecutables, reglas, trampas de examen, widgets y al final de cada una, su **📝 Test** (4 preguntas al azar + 1 **reto de código** que escribes tú y el motor valida); al sacar 4/5 la sección se completa sola |
 | 🧪 Laboratorio | Editor de Java: salida, paso a paso con memoria animada, traza, árbol de tipos y bits |
 | 🎮 Juegos | Promotion Arena, ¿Compila?, Predice la salida, La Escalera, Bit Lab, Rayos X, Flashcards |
 | 🎯 Examen | Simulacro final: 1 pregunta de cada sección + 5 integradoras + 2 retos de código, con desglose de dónde fallaste |
